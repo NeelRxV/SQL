@@ -1,4 +1,3 @@
-
 With skills_demand as(
     SELECT
         skills_dim.skills,

@@ -111,15 +111,16 @@ ORDER BY
 average_salary desc
 limit 25
 ```
-Core insights:
+**Insights**:
+
 1) high pay here doesn't come from "analysis skill" - it comes from scope creep. Most of these tools (Terraform, Ansible, Kafka, GitLab, VMware) are DevOps/data-engineering tools, not analyst tools. Employers labeling these roles "Data Analyst" are really hiring one person to do analyst + engineer work - pay reflects that combined scope, not the tools themselves.
 2) Secondary driver - ML/AI blur: PyTorch, TensorFlow, Keras, Hugging Face (~120-155k) show analysts increasingly expected to build models, not just report on data - driven by AI adoption pressure outpacing separate ML hiring.
 3) Outliers = scarcity, not value: SVN (400k) and Solidity (179k) are niche/legacy skills with few practitioners - small sample sizes and scarcity premium, not causal value from the skill itself. Same logic likely applies to dplyr (R persists in pharma/biostat niches with high switching costs).
 4) Notable absence: SQL, Excel, Tableau - the actual core analyst skills - don't appear. They're table stakes, not differentiators, so they don't show up as "top paying."
-### Optimal skills for Data Analysts
-This query focuses on finding the most valuable skills by analyzing both demand and salary levels. By filtering for remote Data Analyst roles and comparing skill frequency with average salary, it identifies skills that are not only widely requested but also associated with higher compensation.
-```sql
+### 5. Optimal Skills for Data Analysts
+This query merges demand and pay into a single view by joining a `skills_demand` CTE (count of remote postings requiring each skill) with an `avg_salary` CTE (average salary tied to each skill), filtered to skills appearing in more than 10 postings. The intent is to find skills that are simultaneously well-paid and reasonably in-demand, rather than optimizing for either metric alone.
 
+```sql
 With skills_demand as(
     SELECT
         skills_dim.skills,
@@ -164,6 +165,27 @@ ORDER BY
     demand_count desc
 limit 25
 ```
+
+**Insights:**
+- Pay and demand move in opposite directions at the extremes. The highest-paid skills - Go ($115k), Confluence ($114k), Hadoop ($113k), Snowflake ($113k) - all sit at low demand counts (11–37), while the most in-demand skills — Python (236 postings), Tableau (230), R (148) - average only ~$99–101k. This is a scarcity effect: fewer analysts hold niche/infrastructure skills, so employers pay a premium to secure them; ubiquitous skills are commoditized precisely because most analysts already have them, which caps their marginal value.
+- Cloud and big-data skills (Snowflake, Azure, BigQuery, AWS) cluster at the top of the pay range together, which points to a causal driver behind the scarcity premium: these tools require infrastructure-level knowledge beyond core analytics, so they signal a broader technical skillset employers can't easily source from a pure "Data Analyst" candidate pool.
+- Python and R, despite topping demand, land in the lower half of this list. This suggests they function as baseline/gatekeeping skills rather than differentiators - necessary to qualify for a role, but not sufficient to command top pay on their own.
 # What I Learned
 
+This project was my first real test of turning raw SQL knowledge into an actual analytical workflow, and it pushed me to move well beyond simple SELECT statements:
+
+- **Joins (LEFT JOIN, INNER JOIN):** Learned to combine `job_postings_fact` with dimension tables (`company_dim`, `skills_dim`, `skills_job_dim`) to attach readable context (company names, skill names) to raw fact-table IDs.
+- **CTEs (WITH):** Used common table expressions to break complex logic into readable steps, first isolating top paying jobs, then joining skills onto them, and later building two separate CTEs (demand and average salary) to merge into one final view.
+- **Aggregate functions (COUNT, AVG, ROUND):** Applied these to turn row-level job postings into market-level metrics, counting how often a skill appears and calculating its average associated salary.
+- **GROUP BY logic:** Understood that aggregation only makes sense once data is grouped by the right entity, in this case by skill, not by job posting.
+- **Filtering (WHERE, IS NOT NULL, multiple AND conditions):** Learned to filter out incomplete data (missing salaries) before aggregating, since including NULLs would silently skew averages.
+- **Sorting and limiting (ORDER BY, LIMIT):** Used these to surface only the most relevant rows (top 10, top 25) instead of dumping the entire result set.
+- **Combining CTEs via INNER JOIN:** The final query in this project required joining two independently built CTEs on a shared key, which was the most demanding step conceptually, since it required thinking about the data in two separate aggregated shapes before merging them.
+
+Beyond syntax, the biggest shift was learning to read query results causally rather than just descriptively, asking not just "what does this number say" but "why would the market produce this pattern."
+
 # Conclusions
+
+This analysis suggests that pay in the Data Analyst market is not driven by the "Data Analyst" title itself, but by scope and scarcity layered on top of it. The highest paying postings are, in practice, senior or hybrid engineering roles wearing an analyst label, which explains why DevOps and ML tools outearn traditional analyst tools. Core skills like SQL, Excel, and Tableau remain the most in demand because they are the baseline requirement to even qualify for a role, not because they command a premium, since nearly every analyst already has them. The scarcer, more infrastructure heavy skills (Snowflake, Azure, BigQuery, Go) pay more precisely because fewer analysts hold them, making them a differentiator rather than a gatekeeping requirement.
+
+The practical takeaway is that maximizing career value as a Data Analyst means treating core tools as a mandatory foundation, then deliberately layering in one or two scarce, higher scope skills (cloud platforms, or lightweight ML exposure) to move from being interchangeable to being the person a company specifically pays more to keep.
